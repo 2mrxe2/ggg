@@ -1,0 +1,37 @@
+name: VPS
+on:
+  workflow_dispatch:
+
+jobs:
+  secure-vps:           # ← نفس الاسم الأصلي حتى يشتغل
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: 🛠️ Install SSH
+        run: |
+          sudo apt update
+          sudo apt install -y openssh-server wget
+          echo "root:admin@123" | sudo chpasswd
+          echo "PermitRootLogin yes" | sudo tee -a /etc/ssh/sshd_config
+          echo "PasswordAuthentication yes" | sudo tee -a /etc/ssh/sshd_config
+          sudo systemctl restart ssh
+          echo "🔐 SSH: root / admin@123"
+
+      - name: 🌐 Install Cloudflare Tunnel
+        run: |
+          wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+          sudo dpkg -i cloudflared-linux-amd64.deb
+
+      - name: 🚀 Start Tunnel
+        run: |
+          cloudflared tunnel --url ssh://localhost:22 --no-autoupdate & sleep 5
+          echo "🌐 رابط الاتصال جاهز:"
+          cloudflared tunnel --url ssh://localhost:22 --no-autoupdate 2>&1 | grep -o "https://.*trycloudflare.com"
+
+      - name: ⏳ Keep Alive
+        run: |
+          while true; do
+            echo "🟢 VPS شغال... ($(date))"
+            sleep 300
+          done
