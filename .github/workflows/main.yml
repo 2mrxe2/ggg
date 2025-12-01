@@ -1,9 +1,9 @@
-name: VPS
+name: VPS-Termius
 on:
   workflow_dispatch:
 
 jobs:
-  secure-vps:           # ← نفس الاسم الأصلي حتى يشتغل
+  secure-vps:
     runs-on: ubuntu-latest
     timeout-minutes: 360
 
@@ -18,20 +18,19 @@ jobs:
           sudo systemctl restart ssh
           echo "🔐 SSH: root / admin@123"
 
-      - name: 🌐 Install Cloudflare Tunnel
-        run: |
-          wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
-          sudo dpkg -i cloudflared-linux-amd64.deb
-
-      - name: 🚀 Start Tunnel
-        run: |
-          cloudflared tunnel --url ssh://localhost:22 --no-autoupdate & sleep 5
-          echo "🌐 رابط الاتصال جاهز:"
-          cloudflared tunnel --url ssh://localhost:22 --no-autoupdate 2>&1 | grep -o "https://.*trycloudflare.com"
-
-      - name: ⏳ Keep Alive
+      - name: 🚀 Keep VPS Alive
         run: |
           while true; do
             echo "🟢 VPS شغال... ($(date))"
             sleep 300
-          done
+          done &
+
+      - name: 🌐 Setup Reverse SSH via Serveo
+        run: |
+          ssh -o StrictHostKeyChecking=no -R 2222:localhost:22 nokey@serveo.net &
+          echo "🌟 VPS جاهز للهاتف عبر Termius!"
+          echo "📌 الاتصال:"
+          echo "Host: serveo.net"
+          echo "Port: 2222"
+          echo "Username: root"
+          echo "Password: admin@123"
